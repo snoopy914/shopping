@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'courses',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -125,4 +126,18 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Toss Payments 설정
+TOSS_PAYMENTS_SECRET_KEY = 'test_sk_eqRGgYO1r5OKk2ygQBX53QnN2Eya'
+TOSS_PAYMENTS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq'  # 클라이언트 키 (테스트용)
+TOSS_PAYMENTS_API_URL = 'https://api.tosspayments.com/v1/payments/'
+
+# 결제 성공/실패 URL 설정
+PAYMENT_SUCCESS_URL = 'http://3.90.0.216/payments/success/'
+PAYMENT_FAIL_URL = 'http://3.90.0.216/payments/fail/'
+
+# 로그인 관련 설정
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/courses/'
+LOGOUT_REDIRECT_URL = '/courses/' 

@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% block title %}레슨 관리 - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- 헤더 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-list-alt"></i> 레슨 관리
+            </h2>
+            <p class="text-muted mb-0">{{ course.title }}</p>
+        </div>
+        <div>
+            <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> 강의로 돌아가기
+            </a>
+            <a href="{% url 'courses:edit_course' course.id %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> 강의 편집
+            </a>
+        </div>
+    </div>
+    
+    <!-- 메시지 표시 -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- 강의 정보 요약 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="card-title">{{ course.title }}</h5>
+                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <p class="mb-1"><strong>강사:</strong> {{ course.instructor.username }}</p>
+                    <p class="mb-1"><strong>카테고리:</strong> {{ course.category.name }}</p>
+                    <p class="mb-1"><strong>난이도:</strong> {{ course.get_level_display_korean }}</p>
+                    <p class="mb-0"><strong>총 챕터:</strong> {{ chapters|length }}개</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 챕터별 레슨 목록 -->
+    {% for chapter in chapters %}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder"></i> 
+                    {{ chapter.order }}. {{ chapter.title }}
+                </h5>
+                <span class="badge bg-info">{{ chapter.lessons.count }}개 레슨</span>
+            </div>
+            {% if chapter.description %}
+            <p class="text-muted mt-2 mb-0">{{ chapter.description }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="card-body p-0">
+            {% if chapter.lessons.exists %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%">순서</th>
+                            <th width="30%">레슨 제목</th>
+                            <th width="25%">유튜브</th>
+                            <th width="10%">시간</th>
+                            <th width="10%">상태</th>
+                            <th width="20%">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in chapter.lessons.all %}
+                        <tr>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">{{ lesson.order }}</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ lesson.title }}</strong>
+                                    {% if lesson.description %}
+                                    <br>
+                                    <small class="text-muted">{{ lesson.description|truncatewords:10 }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if lesson.youtube_url %}
+                                    <div class="d-flex align-items-center">
+                                        <i class="fab fa-youtube text-danger me-2"></i>
+                                        <div>
+                                            <small class="text-success">연결됨</small>
+                                            <br>
+                                            <small class="text-muted">ID: {{ lesson.youtube_video_id }}</small>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-times-circle text-danger me-1"></i>
+                                        없음
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if lesson.duration %}
+                                    <span class="badge bg-info">{{ lesson.duration }}</span>
+                                {% else %}
+                                    <span class="text-muted">미설정</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if lesson.is_preview %}
+                                    <span class="badge bg-success">미리보기</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">일반</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'courses:lesson_detail' lesson.id %}" 
+                                       class="btn btn-outline-primary" title="보기">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'courses:edit_lesson' lesson.id %}" 
+                                       class="btn btn-outline-secondary" title="편집">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if lesson.youtube_embed_url %}
+                                    <button class="btn btn-outline-success preview-btn" 
+                                            data-lesson-id="{{ lesson.id }}"
+                                            data-embed-url="{{ lesson.youtube_embed_url }}"
+                                            data-lesson-title="{{ lesson.title }}"
+                                            title="미리보기">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-video fa-2x text-muted mb-3"></i>
+                <p class="text-muted">이 챕터에는 아직 레슨이 없습니다.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+            <h5>챕터가 없습니다</h5>
+            <p class="text-muted">이 강의에는 아직 챕터가 생성되지 않았습니다.</p>
+            <a href="/admin/courses/chapter/add/?course={{ course.id }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> 첫 챕터 만들기
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- 통계 요약 -->
+    <div class="card bg-light">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <h4 class="text-primary">{{ chapters|length }}</h4>
+                    <p class="text-muted mb-0">총 챕터</p>
+                </div>
+                <div class="col-md-3">
+                    <h4 class="text-success">
+                        {% with total_lessons=0 %}
+                            {% for chapter in chapters %}
+                                {% with total_lessons=total_lessons|add:chapter.lessons.count %}
+                                {% endwith %}
+                            {% endfor %}
+                            {{ total_lessons }}
+                        {% endwith %}
+                    </h4>
+                    <p class="text-muted mb-0">총 레슨</p>
+                </div>
+                <div class="col-md-3">
+                    <h4 class="text-warning">
+                        {% with youtube_lessons=0 %}
+                            {% for chapter in chapters %}
+                                {% for lesson in chapter.lessons.all %}
+                                    {% if lesson.youtube_url %}
+                                        {% with youtube_lessons=youtube_lessons|add:1 %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            {{ youtube_lessons }}
+                        {% endwith %}
+                    </h4>
+                    <p class="text-muted mb-0">유튜브 연결</p>
+                </div>
+                <div class="col-md-3">
+                    <h4 class="text-info">
+                        {% with preview_lessons=0 %}
+                            {% for chapter in chapters %}
+                                {% for lesson in chapter.lessons.all %}
+                                    {% if lesson.is_preview %}
+                                        {% with preview_lessons=preview_lessons|add:1 %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            {{ preview_lessons }}
+                        {% endwith %}
+                    </h4>
+                    <p class="text-muted mb-0">미리보기 가능</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 미리보기 모달 -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-play"></i> <span id="preview_title"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ratio ratio-16x9">
+                    <iframe id="preview_iframe" src="" title="레슨 미리보기" allowfullscreen class="rounded"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 미리보기 버튼들에 이벤트 리스너 추가
+    document.querySelectorAll('.preview-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const lessonId = this.getAttribute('data-lesson-id');
+            const embedUrl = this.getAttribute('data-embed-url');
+            const title = this.getAttribute('data-lesson-title');
+            
+            previewLesson(lessonId, embedUrl, title);
+        });
+    });
+});
+
+function previewLesson(lessonId, embedUrl, title) {
+    document.getElementById('preview_title').textContent = title;
+    document.getElementById('preview_iframe').src = embedUrl;
+    
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+</script>
+
+<style>
+.ratio-16x9 {
+    --bs-aspect-ratio: 56.25%;
+}
+
+.table th {
+    border-top: none;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %} 

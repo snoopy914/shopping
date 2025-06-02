@@ -146,9 +146,45 @@
                 </ul>
                 
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/">관리자</a>
-                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="{% url 'courses:my_courses' %}">
+                                    <i class="fas fa-book"></i> 내 강의
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">
+                                    <i class="fas fa-key"></i> 비밀번호 변경
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if user.is_staff %}
+                                <li><a class="dropdown-item" href="/admin/">
+                                    <i class="fas fa-cog"></i> 관리자
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:youtube_embed_manager' %}">
+                                    <i class="fab fa-youtube"></i> 유튜브 관리
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">
+                                    <i class="fas fa-sign-out-alt"></i> 로그아웃
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">
+                                <i class="fas fa-sign-in-alt"></i> 로그인
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary btn-sm ms-2" href="{% url 'accounts:signup' %}">
+                                <i class="fas fa-user-plus"></i> 회원가입
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

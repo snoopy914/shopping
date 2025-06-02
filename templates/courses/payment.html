@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}결제하기 - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">💳 결제하기</h4>
+                </div>
+                <div class="card-body">
+                    <!-- 강의 정보 -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            {% if course.thumbnail %}
+                                <img src="{{ course.thumbnail.url }}" class="img-fluid rounded" alt="{{ course.title }}">
+                            {% else %}
+                                <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded" style="height: 150px;">
+                                    <i class="fas fa-play fa-3x"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <h5>{{ course.title }}</h5>
+                            <p class="text-muted">{{ course.description|truncatewords:20 }}</p>
+                            <p><strong>강사:</strong> {{ course.instructor.username }}</p>
+                            <p><strong>난이도:</strong> {{ course.get_level_display_korean }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 가격 정보 -->
+                    <div class="border-top pt-4">
+                        <div class="row">
+                            <div class="col">
+                                <h5>결제 금액</h5>
+                                {% if course.is_discount %}
+                                    <p class="mb-1">
+                                        <span class="text-muted text-decoration-line-through">₩{{ course.price|floatformat:0 }}</span>
+                                        <span class="text-danger ms-2">₩{{ course.final_price|floatformat:0 }}</span>
+                                    </p>
+                                    <small class="text-success">할인가 적용</small>
+                                {% else %}
+                                    <p class="mb-1 h4">₩{{ course.final_price|floatformat:0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 결제 버튼 -->
+                    <div class="border-top pt-4">
+                        <button id="payment-button" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-credit-card me-2"></i>
+                            ₩{{ amount|floatformat:0 }} 결제하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 결제 약관 -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6>📄 결제 약관</h6>
+                    <ul class="small text-muted">
+                        <li>구매한 강의는 개인 학습 목적으로만 사용할 수 있습니다.</li>
+                        <li>강의 내용의 무
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

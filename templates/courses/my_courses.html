@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}내 강의{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">📚 내 강의</h2>
+            
+            {% if courses_data %}
+                {% for course_data in courses_data %}
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h4 class="mb-1">{{ course_data.course.title }}</h4>
+                                <div class="d-flex align-items-center">
+                                    <small class="me-3">
+                                        <i class="fas fa-user"></i> {{ course_data.course.instructor.username }}
+                                    </small>
+                                    <small class="me-3">
+                                        <i class="fas fa-book"></i> {{ course_data.chapters|length }}개 챕터
+                                    </small>
+                                    <small class="me-3">
+                                        <i class="fas fa-play-circle"></i> {{ course_data.total_lessons }}개 레슨
+                                    </small>
+                                    <small>
+                                        <i class="fas fa-calendar"></i> {{ course_data.purchase.purchased_at|date:"Y.m.d" }} 구매
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if course_data.purchase.payment.payment_method == 'free' %}
+                                    <span class="badge bg-success fs-6">무료 강의</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark fs-6">유료 강의</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        {% if course_data.chapters %}
+                            <!-- 챕터별 레슨 목록 -->
+                            <div class="accordion" id="accordion{{ course_data.course.id }}">
+                                {% for chapter in course_data.chapters %}
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading{{ chapter.id }}">
+                                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" 
+                                                type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#collapse{{ chapter.id }}" 
+                                                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                                aria-controls="collapse{{ chapter.id }}">
+                                            <div class="d-flex justify-content-between w-100 me-3">
+                                                <span>
+                                                    <strong>{{ chapter.order }}. {{ chapter.title }}</strong>
+                                                    {% if chapter.description %}
+                                                        <small class="text-muted d-block">{{ chapter.description|truncatewords:15 }}</small>
+                                                    {% endif %}
+                                                </span>
+                                                <span class="badge bg-secondary">{{ chapter.lessons.count }}개 레슨</span>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ chapter.id }}" 
+                                         class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                                         aria-labelledby="heading{{ chapter.id }}" 
+                                         data-bs-parent="#accordion{{ course_data.course.id }}">
+                                        <div class="accordion-body">
+                                            {% if chapter.lessons.exists %}
+                                                <div class="list-group list-group-flush">
+                                                    {% for lesson in chapter.lessons.all %}
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div class="flex-grow-1">
+                                                            <div class="d-flex align-items-center">
+                                                                <span class="badge bg-light text-dark me-3">{{ lesson.order }}</span>
+                                                                <div>
+                                                                    <h6 class="mb-1">{{ lesson.title }}</h6>
+                                                                    {% if lesson.description %}
+                                                                        <small class="text-muted">{{ lesson.description|truncatewords:10 }}</small>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="d-flex align-items-center">
+                                                            {% if lesson.duration %}
+                                                                <small class="text-muted me-3">
+                                                                    <i class="fas fa-clock"></i> {{ lesson.duration }}
+                                                                </small>
+                                                            {% endif %}
+                                                            
+                                                            {% if lesson.youtube_url %}
+                                                                <i class="fab fa-youtube text-danger me-3" title="유튜브 영상"></i>
+                                                            {% endif %}
+                                                            
+                                                            {% if lesson.is_preview %}
+                                                                <span class="badge bg-success me-3">미리보기</span>
+                                                            {% endif %}
+                                                            
+                                                            <div class="btn-group btn-group-sm">
+                                                                <a href="{% url 'courses:lesson_detail' lesson.id %}" 
+                                                                   class="btn btn-primary" title="레슨 학습">
+                                                                    <i class="fas fa-play"></i> 학습하기
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center py-3 text-muted">
+                                                    <i class="fas fa-video"></i> 이 챕터에는 레슨이 없습니다.
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <!-- 챕터가 없는 경우 -->
+                            <div class="text-center py-4">
+                                <i class="fas fa-folder-open fa-2x text-muted mb-3"></i>
+                                <h5>강의 콘텐츠 준비 중</h5>
+                                <p class="text-muted">아직 챕터와 레슨이 업로드되지 않았습니다.</p>
+                                <a href="{% url 'courses:course_detail' course_data.course.id %}" class="btn btn-outline-primary">
+                                    강의 상세 보기
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- 구매한 강의가 없는 경우 -->
+                <div class="text-center py-5">
+                    <i class="fas fa-book text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-muted">구매한 강의가 없습니다</h4>
+                    <p class="text-muted">관심 있는 강의를 찾아보세요!</p>
+                    <a href="{% url 'courses:course_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>강의 둘러보기
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %} 

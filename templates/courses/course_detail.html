@@ -3,7 +3,7 @@
 {% block title %}{{ course.title }} - 노마드 코더스{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container my-5">
     <div class="row">
         <!-- Main Content -->
         <div class="col-lg-8">
@@ -12,39 +12,52 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}">강의</a></li>
-                        <li class="breadcrumb-item"><a href="?category={{ course.category.slug }}">{{ course.category.name }}</a></li>
-                        <li class="breadcrumb-item active">{{ course.title }}</li>
+                        <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}?category={{ course.category.slug }}">{{ course.category.name }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ course.title }}</li>
                     </ol>
                 </nav>
                 
+                <h1 class="mb-3">{{ course.title }}</h1>
+                
+                <!-- 편집 버튼 (강사 또는 관리자만 표시) -->
+                {% if user.is_authenticated and user == course.instructor or user.is_staff %}
                 <div class="mb-3">
-                    <span class="badge badge-level badge-{{ course.level }}">
-                        {{ course.get_level_display_korean }}
-                    </span>
-                    
-                    {% if course.is_bestseller %}
-                        <span class="badge bg-danger">베스트셀러</span>
-                    {% endif %}
-                    
-                    {% if course.is_updated %}
-                        <span class="badge bg-primary">업데이트 🔥</span>
-                    {% endif %}
-                    
-                    {% if course.price_type == 'free' %}
-                        <span class="badge bg-success">무료 🔥</span>
-                    {% endif %}
-                    
-                    {% if course.is_discount %}
-                        <span class="badge bg-warning">할인 🔥</span>
+                    <a href="{% url 'courses:edit_course' course.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit"></i> 강의 편집
+                    </a>
+                    {% if user.is_staff %}
+                    <a href="{% url 'courses:youtube_embed_manager' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fab fa-youtube"></i> 유튜브 관리
+                    </a>
                     {% endif %}
                 </div>
+                {% endif %}
                 
-                <h1 class="display-5 fw-bold mb-3">{{ course.title }}</h1>
+                <!-- Tags -->
+                <div class="mb-3">
+                    {% if course.is_bestseller %}
+                        <span class="badge bg-warning text-dark me-2">
+                            <i class="fas fa-crown"></i> 베스트셀러
+                        </span>
+                    {% endif %}
+                    {% if course.is_updated %}
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-sync-alt"></i> 최신 업데이트
+                        </span>
+                    {% endif %}
+                    {% if course.is_discount %}
+                        <span class="badge bg-danger me-2">
+                            <i class="fas fa-percentage"></i> 할인
+                        </span>
+                    {% endif %}
+                    <span class="badge badge-{{ course.level }} me-2">{{ course.get_level_display_korean }}</span>
+                </div>
                 
-                <div class="d-flex align-items-center mb-3">
+                <!-- Course Meta -->
+                <div class="d-flex flex-wrap align-items-center text-muted mb-4">
                     <div class="me-4">
                         <i class="fas fa-user text-muted"></i>
-                        <span class="ms-1">{{ course.instructor.get_full_name|default:course.instructor.username }}</span>
+                        <span class="ms-1">{{ course.instructor.username }}</span>
                     </div>
                     
                     {% if avg_rating %}
@@ -54,10 +67,10 @@
                     </div>
                     {% endif %}
                     
-                    {% if total_lessons %}
+                    {% if course.duration %}
                     <div class="me-4">
-                        <i class="fas fa-play-circle text-muted"></i>
-                        <span class="ms-1">{{ total_lessons }}개 레슨</span>
+                        <i class="fas fa-clock text-muted"></i>
+                        <span class="ms-1">{{ course.duration }}</span>
                     </div>
                     {% endif %}
                     
@@ -68,16 +81,32 @@
                 </div>
             </div>
             
-            <!-- Course Image -->
-            {% if course.thumbnail %}
+            <!-- YouTube Video -->
+            {% if course.youtube_embed_url %}
             <div class="mb-4">
-                <img src="{{ course.thumbnail.url }}" class="img-fluid rounded" alt="{{ course.title }}">
+                <div class="ratio ratio-16x9">
+                    <iframe src="{{ course.youtube_embed_url }}" 
+                            title="{{ course.title }}" 
+                            allowfullscreen
+                            class="rounded"></iframe>
+                </div>
+                <div class="mt-2 text-center">
+                    <a href="{{ course.youtube_url }}" target="_blank" class="btn btn-outline-danger btn-sm">
+                        <i class="fab fa-youtube"></i> 유튜브에서 보기
+                    </a>
+                </div>
+            </div>
+            {% elif course.thumbnail %}
+            <div class="mb-4">
+                <img src="{{ course.thumbnail.url }}" class="img-fluid rounded w-100" alt="{{ course.title }}">
             </div>
             {% endif %}
             
             <!-- Course Description -->
             <div class="mb-5">
-                <h3 class="mb-3">강의 소개</h3>
+                <h3 class="mb-3">
+                    <i class="fas fa-info-circle text-primary"></i> 강의 소개
+                </h3>
                 <div class="card">
                     <div class="card-body">
                         <p class="card-text">{{ course.description|linebreaks }}</p>
@@ -85,67 +114,15 @@
                 </div>
             </div>
             
-            <!-- Course Curriculum -->
-            {% if chapters %}
-            <div class="mb-5">
-                <h3 class="mb-3">강의 커리큘럼</h3>
-                <div class="accordion" id="curriculumAccordion">
-                    {% for chapter in chapters %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading{{ chapter.id }}">
-                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" 
-                                    type="button" data-bs-toggle="collapse" 
-                                    data-bs-target="#collapse{{ chapter.id }}" 
-                                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
-                                    aria-controls="collapse{{ chapter.id }}">
-                                <strong>#{{ chapter.order }} {{ chapter.title }}</strong>
-                                <span class="badge bg-secondary ms-2">{{ chapter.lessons.count }}개 레슨</span>
-                            </button>
-                        </h2>
-                        <div id="collapse{{ chapter.id }}" 
-                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
-                             aria-labelledby="heading{{ chapter.id }}" 
-                             data-bs-parent="#curriculumAccordion">
-                            <div class="accordion-body">
-                                {% if chapter.description %}
-                                    <p class="text-muted mb-3">{{ chapter.description }}</p>
-                                {% endif %}
-                                
-                                <div class="list-group list-group-flush">
-                                    {% for lesson in chapter.lessons.all %}
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div class="d-flex align-items-center">
-                                            {% if lesson.is_preview %}
-                                                <i class="fas fa-eye text-success me-2"></i>
-                                            {% else %}
-                                                <i class="fas fa-lock text-muted me-2"></i>
-                                            {% endif %}
-                                            <span>#{{ chapter.order }}.{{ lesson.order }} {{ lesson.title }}</span>
-                                            {% if lesson.is_preview %}
-                                                <span class="badge bg-success ms-2">미리 보기</span>
-                                            {% endif %}
-                                        </div>
-                                        {% if lesson.duration %}
-                                            <span class="text-muted">({{ lesson.duration }})</span>
-                                        {% endif %}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-            
             <!-- Technologies -->
             <div class="mb-5">
-                <h3 class="mb-3">사용 기술</h3>
+                <h3 class="mb-3">
+                    <i class="fas fa-code text-success"></i> 사용 기술
+                </h3>
                 <div>
                     {% for tech in course.technologies.all %}
-                        <span class="tech-tag me-2 mb-2" style="background-color: {{ tech.color }}20; color: {{ tech.color }};">
-                            {{ tech.name }}
+                        <span class="tech-tag me-2 mb-2" style="background-color: {{ tech.color }}20; color: {{ tech.color }}; border: 1px solid {{ tech.color }}40;">
+                            <i class="fas fa-tag"></i> {{ tech.name }}
                         </span>
                     {% endfor %}
                 </div>
@@ -185,28 +162,80 @@
         <div class="col-lg-4">
             <div class="sticky-top" style="top: 2rem;">
                 <!-- Purchase Card -->
-                <div class="card mb-4">
+                <div class="card shadow-sm mb-4">
                     <div class="card-body text-center">
+                        <!-- 가격 표시 -->
                         <div class="mb-3">
                             {% if course.price_type == 'free' %}
-                                <h2 class="text-success fw-bold">무료</h2>
+                                <h2 class="text-success fw-bold">
+                                    <i class="fas fa-gift"></i> 무료
+                                </h2>
                             {% else %}
-                                <h2 class="text-primary fw-bold">₩{{ course.price|floatformat:0 }}</h2>
+                                {% if course.is_discount and course.discount_price %}
+                                    <div>
+                                        <h4 class="text-muted text-decoration-line-through mb-1">
+                                            ₩{{ course.price|floatformat:0 }}
+                                        </h4>
+                                        <h2 class="text-danger fw-bold">
+                                            ₩{{ course.final_price|floatformat:0 }}
+                                        </h2>
+                                        <small class="text-success">할인가 적용</small>
+                                    </div>
+                                {% else %}
+                                    <h2 class="text-primary fw-bold">
+                                        ₩{{ course.price|floatformat:0 }}
+                                    </h2>
+                                {% endif %}
                             {% endif %}
                         </div>
                         
-                        {% if course.price_type == 'free' %}
-                            <button class="btn btn-success btn-lg w-100 mb-3">
-                                <i class="fas fa-play"></i> 무료로 시작하기
-                            </button>
+                        <!-- 구매/수강 버튼 -->
+                        {% if is_purchased %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> 구매 완료
+                            </div>
+                            <a href="{% url 'courses:my_courses' %}" class="btn btn-success btn-lg w-100 mb-3">
+                                <i class="fas fa-play"></i> 강의 보기
+                            </a>
+                        {% elif not user.is_authenticated %}
+                            <div class="alert alert-info">
+                                로그인 후 구매하실 수 있습니다.
+                            </div>
+                            <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="fas fa-sign-in-alt"></i> 로그인
+                            </a>
                         {% else %}
-                            <button class="btn btn-primary btn-lg w-100 mb-3">
-                                <i class="fas fa-shopping-cart"></i> 구매하기
-                            </button>
+                            {% if course.price_type == 'free' %}
+                                <button id="free-purchase-btn" class="btn btn-success btn-lg w-100 mb-3">
+                                    <i class="fas fa-play"></i> 무료로 시작하기
+                                </button>
+                            {% else %}
+                                <button id="payment-button" class="btn btn-primary btn-lg w-100 mb-3">
+                                    <i class="fas fa-shopping-cart"></i> 
+                                    ₩{{ course.final_price|floatformat:0 }} 구매하기
+                                </button>
+                            {% endif %}
                         {% endif %}
                         
-                        <div class="text-muted small">
-                            <i class="fas fa-shield-alt"></i> 30일 환불 보장
+                        {% if course.youtube_url %}
+                        <a href="{{ course.youtube_url }}" target="_blank" class="btn btn-outline-danger w-100 mb-3">
+                            <i class="fab fa-youtube"></i> 유튜브에서 미리보기
+                        </a>
+                        {% endif %}
+                        
+                        <div class="text-start mt-4">
+                            <h6><i class="fas fa-check-circle text-success"></i> 포함된 내용:</h6>
+                            <ul class="list-unstyled">
+                                {% if course.duration %}
+                                <li><i class="fas fa-clock text-muted"></i> {{ course.duration }} 분량</li>
+                                {% endif %}
+                                <li><i class="fas fa-mobile-alt text-muted"></i> 모바일 및 TV 접근</li>
+                                <li><i class="fas fa-infinity text-muted"></i> 무제한 접근</li>
+                                <li><i class="fas fa-certificate text-muted"></i> 수료증 발급</li>
+                                {% if course.price_type == 'paid' %}
+                                <li><i class="fas fa-undo text-muted"></i> 7일 환불 보장</li>
+                                {% endif %}
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -259,9 +288,9 @@
                                     <br><small class="text-muted">({{ lesson.duration }})</small>
                                 {% endif %}
                             </div>
-                            <button class="btn btn-sm btn-outline-success">
-                                <i class="fas fa-play"></i>
-                            </button>
+                            <a href="{% url 'courses:lesson_detail' lesson.id %}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-play"></i> 시청
+                            </a>
                         </div>
                         {% if not forloop.last %}<hr>{% endif %}
                         {% endfor %}
@@ -314,4 +343,110 @@
         </div>
     </div>
 </div>
+
+<!-- 토스 페이먼트 SDK -->
+<script src="https://js.tosspayments.com/v1/payment"></script>
+
+<script>
+{% if user.is_authenticated and not is_purchased %}
+// 토스 페이먼트 초기화
+const clientKey = "{{ toss_client_key }}";
+if (clientKey) {
+    const tossPayments = TossPayments(clientKey);
+    
+    // 무료 강의 구매 처리
+    {% if course.price_type == 'free' %}
+    document.getElementById('free-purchase-btn')?.addEventListener('click', function() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'courses:initiate_payment' course.id %}";
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        form.appendChild(csrfToken);
+        
+        document.body.appendChild(form);
+        form.submit();
+    });
+    {% endif %}
+    
+    // 유료 강의 결제 처리
+    {% if course.price_type == 'paid' %}
+    document.getElementById('payment-button')?.addEventListener('click', function() {
+        const orderId = 'order_' + Math.random().toString(36).substr(2, 9);
+        const amount = {{ course.final_price|floatformat:0 }};
+        
+        // 로딩 상태 표시
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 결제창 준비 중...';
+        
+        tossPayments.requestPayment('카드', {
+            amount: amount,
+            orderId: orderId,
+            orderName: '{{ course.title|slice:":50"|escapejs }}',
+            customerName: '{{ user.username|escapejs }}',
+            successUrl: window.location.origin + '/courses/payment/success/',
+            failUrl: window.location.origin + '/courses/payment/fail/',
+            {% if user.email %}
+            customerEmail: '{{ user.email|escapejs }}',
+            {% endif %}
+            validHours: 1,
+            metadata: {
+                courseId: '{{ course.id }}',
+                userId: '{{ user.id }}'
+            }
+        }).catch(function (error) {
+            // 에러 처리
+            console.error('결제 에러:', error);
+            alert('결제 중 오류가 발생했습니다: ' + error.message);
+            
+            // 버튼 상태 복원
+            const btn = document.getElementById('payment-button');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-shopping-cart"></i> ₩{{ course.final_price|floatformat:0 }} 구매하기';
+            }
+        });
+    });
+    {% endif %}
+} else {
+    console.error('토스 페이먼트 클라이언트 키가 없습니다.');
+}
+{% endif %}
+</script>
+
+<style>
+.tech-tag {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.ratio-16x9 {
+    --bs-aspect-ratio: 56.25%;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.badge-beginner { 
+    background-color: var(--bs-success) !important; 
+}
+.badge-intermediate { 
+    background-color: var(--bs-warning) !important; 
+}
+.badge-advanced { 
+    background-color: var(--bs-danger) !important; 
+}
+</style>
 {% endblock %} 

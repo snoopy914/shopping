@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}레슨 편집 - {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- 네비게이션 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}">강의 목록</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'courses:course_detail' course.id %}">{{ course.title }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'courses:lesson_detail' lesson.id %}">{{ lesson.title }}</a></li>
+            <li class="breadcrumb-item active">편집</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> 레슨 편집
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- 메시지 표시 -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" id="lessonForm">
+                        {% csrf_token %}
+                        
+                        <!-- 레슨 제목 -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                <i class="fas fa-play-circle"></i> 레슨 제목
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ lesson.title }}" required>
+                        </div>
+                        
+                        <!-- 레슨 설명 -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-info-circle"></i> 레슨 설명
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="이 레슨에 대한 전반적인 설명을 작성해주세요">{{ lesson.description }}</textarea>
+                        </div>
+                        
+                        <!-- 유튜브 URL -->
+                        <div class="mb-3">
+                            <label for="youtube_url" class="form-label">
+                                <i class="fab fa-youtube"></i> 유튜브 URL
+                            </label>
+                            <input type="url" class="form-control" id="youtube_url" name="youtube_url" 
+                                   value="{{ lesson.youtube_url }}" 
+                                   placeholder="https://www.youtube.com/watch?v=VIDEO_ID">
+                            <div class="form-text">
+                                유튜브 영상 URL을 입력하면 레슨 페이지에 임베드됩니다.
+                            </div>
+                            
+                            <!-- 현재 비디오 ID 표시 -->
+                            {% if lesson.youtube_video_id %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        현재 비디오 ID: <code>{{ lesson.youtube_video_id }}</code>
+                                    </small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 영상 설명 -->
+                        <div class="mb-3">
+                            <label for="video_description" class="form-label">
+                                <i class="fas fa-video"></i> 이 영상에서 배우는 내용
+                            </label>
+                            <textarea class="form-control" id="video_description" name="video_description" 
+                                      rows="5" placeholder="이 영상에서 구체적으로 다루는 내용, 학습 목표, 핵심 포인트 등을 설명해주세요">{{ lesson.video_description }}</textarea>
+                            <div class="form-text">
+                                학습자들이 이 영상을 통해 무엇을 배울 수 있는지 자세히 설명해주세요.
+                            </div>
+                        </div>
+                        
+                        <!-- 재생시간 -->
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">
+                                <i class="fas fa-clock"></i> 재생시간
+                            </label>
+                            <input type="text" class="form-control" id="duration" name="duration" 
+                                   value="{{ lesson.duration }}" placeholder="예: 15분, 23:45">
+                            <div class="form-text">예: 15분, 23:45, 1시간 30분</div>
+                        </div>
+                        
+                        <!-- 미리보기 설정 -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_preview" name="is_preview" 
+                                       {% if lesson.is_preview %}checked{% endif %}>
+                                <label class="form-check-label" for="is_preview">
+                                    <i class="fas fa-eye text-success"></i> 미리보기 가능
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                체크하면 강의를 구매하지 않은 사용자도 이 레슨을 볼 수 있습니다.
+                            </div>
+                        </div>
+                        
+                        <!-- 유튜브 미리보기 -->
+                        <div id="preview_container" class="mb-4 d-none">
+                            <label class="form-label">
+                                <i class="fas fa-eye"></i> 미리보기
+                            </label>
+                            <div class="ratio ratio-16x9">
+                                <iframe id="preview_iframe" src="" 
+                                        title="미리보기" 
+                                        allowfullscreen
+                                        class="rounded"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- 현재 유튜브 영상 -->
+                        {% if lesson.youtube_embed_url %}
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-play"></i> 현재 유튜브 영상
+                            </label>
+                            <div class="ratio ratio-16x9">
+                                <iframe src="{{ lesson.youtube_embed_url }}" 
+                                        title="{{ lesson.title }}" 
+                                        allowfullscreen
+                                        class="rounded"></iframe>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 버튼들 -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'courses:lesson_detail' lesson.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> 취소
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-info me-2" onclick="previewYoutube()">
+                                    <i class="fas fa-eye"></i> 미리보기
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 저장
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 추가 정보 -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle text-info"></i> 레슨 정보
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>강의:</strong> {{ course.title }}</p>
+                            <p class="mb-1"><strong>챕터:</strong> {{ chapter.title }}</p>
+                            <p class="mb-1"><strong>순서:</strong> {{ lesson.order }}번째 레슨</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>강사:</strong> {{ course.instructor.username }}</p>
+                            <p class="mb-1"><strong>생성일:</strong> {{ lesson.created_at|date:"Y-m-d H:i" }}</p>
+                            <p class="mb-1"><strong>레슨 ID:</strong> {{ lesson.id }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewYoutube() {
+    const url = document.getElementById('youtube_url').value;
+    if (!url) {
+        alert('유튜브 URL을 입력해주세요.');
+        return;
+    }
+    
+    fetch('{% url "courses:youtube_preview" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ youtube_url: url })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('preview_iframe').src = data.embed_url;
+            document.getElementById('preview_container').classList.remove('d-none');
+        } else {
+            alert('오류: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('요청 처리 중 오류가 발생했습니다: ' + error);
+    });
+}
+</script>
+
+<style>
+.ratio-16x9 {
+    --bs-aspect-ratio: 56.25%;
+}
+</style>
+{% endblock %} 

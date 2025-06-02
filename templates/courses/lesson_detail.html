@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-3">
+    <!-- 상단 네비게이션 -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'courses:my_courses' %}">내 강의</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'courses:course_detail' course.id %}">{{ course.title }}</a></li>
+            <li class="breadcrumb-item"><span class="text-muted">{{ chapter.title }}</span></li>
+            <li class="breadcrumb-item active">{{ lesson.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- 메인 콘텐츠 -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-play-circle"></i> {{ lesson.title }}
+                        </h4>
+                        {% if user.is_staff or user == course.instructor %}
+                        <a href="{% url 'courses:edit_lesson' lesson.id %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-edit"></i> 편집
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if has_access %}
+                        <!-- 유튜브 영상 -->
+                        {% if lesson.youtube_embed_url %}
+                        <div class="ratio ratio-16x9">
+                            <iframe id="youtube-player"
+                                    src="{{ lesson.youtube_embed_url }}?enablejsapi=1&origin={{ request.build_absolute_uri|slice:':21' }}" 
+                                    title="{{ lesson.title }}" 
+                                    allowfullscreen
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    class="rounded"></iframe>
+                        </div>
+                        {% else %}
+                            <div class="ratio ratio-16x9 bg-light d-flex align-items-center justify-content-center">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-video fa-3x mb-3"></i>
+                                    <h5>유튜브 영상이 없습니다</h5>
+                                    <p>강사가 아직 영상을 업로드하지 않았습니다.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <!-- 접근 권한 없음 -->
+                        <div class="ratio ratio-16x9 bg-light d-flex align-items-center justify-content-center">
+                            <div class="text-center py-5">
+                                <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                                <h5>이 레슨은 구매 후 시청할 수 있습니다</h5>
+                                <p class="text-muted mb-4">{{ course.title }} 강의를 구매하시면 모든 레슨을 시청할 수 있습니다.</p>
+                                <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart"></i> 강의 구매하기
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 영상 하단 정보 -->
+                {% if has_access %}
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>{{ chapter.title }}</h6>
+                            {% if lesson.description %}
+                                <p class="text-muted mb-0">{{ lesson.description }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if lesson.duration %}
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> {{ lesson.duration }}
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- 레슨 설명 -->
+            {% if has_access and lesson.video_description %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i> 이 영상에서 배우는 내용
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {{ lesson.video_description|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- 사이드바 -->
+        <div class="col-lg-4">
+            <!-- 노트 섹션 (접근 권한이 있을 때만) -->
+            {% if has_access %}
+            <div class="card shadow sticky-top mb-4" style="top: 1rem;">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-sticky-note"></i> 내 노트
+                    </h6>
+                </div>
+                
+                <div class="card-body">
+                    <!-- 노트 작성 폼 -->
+                    <form id="note-form" class="mb-4">
+                        <div class="mb-3">
+                            <label for="timestamp" class="form-label">영상 시간 (선택)</label>
+                            <input type="text" class="form-control form-control-sm" id="timestamp" 
+                                   placeholder="예: 05:30" maxlength="20">
+                            <div class="form-text">현재 재생 시간을 자동으로 가져오려면 아래 버튼을 클릭하세요.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="note-content" class="form-label">노트 내용</label>
+                            <textarea class="form-control" id="note-content" rows="4" 
+                                      placeholder="이 시점에서 배운 내용이나 중요한 포인트를 기록해보세요..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="getCurrentTime()">
+                                <i class="fas fa-clock"></i> 현재 시간
+                            </button>
+                            <button type="submit" class="btn btn-success btn-sm flex-grow-1">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                        </div>
+                        
+                        <input type="hidden" id="note-id" value="">
+                    </form>
+                    
+                    <!-- 기존 노트 목록 -->
+                    <div id="notes-list">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-list"></i> 저장된 노트 ({{ notes.count }}개)
+                        </h6>
+                        
+                        {% for note in notes %}
+                        <div class="note-item mb-3 p-2 border rounded" data-note-id="{{ note.id }}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                {% if note.timestamp %}
+                                    <small class="badge bg-info">{{ note.timestamp }}</small>
+                                {% else %}
+                                    <small class="text-muted">시간 없음</small>
+                                {% endif %}
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-secondary btn-sm edit-note-btn" 
+                                            data-note-id="{{ note.id }}"
+                                            data-content="{{ note.content|escapejs }}"
+                                            data-timestamp="{{ note.timestamp }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm delete-note-btn" 
+                                            data-note-id="{{ note.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="note-content">{{ note.content|linebreaks }}</div>
+                            <small class="text-muted">{{ note.created_at|date:"m/d H:i" }}</small>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted py-4" id="no-notes">
+                            <i class="fas fa-sticky-note fa-2x mb-2"></i>
+                            <p>아직 노트가 없습니다.<br>첫 번째 노트를 작성해보세요!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- 강의 정보 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-book"></i> 강의 정보
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>강의:</strong> {{ course.title }}</p>
+                    <p class="mb-1"><strong>강사:</strong> {{ course.instructor.username }}</p>
+                    <p class="mb-1"><strong>챕터:</strong> {{ chapter.title }}</p>
+                    {% if lesson.duration %}
+                    <p class="mb-1"><strong>재생시간:</strong> {{ lesson.duration }}</p>
+                    {% endif %}
+                    {% if lesson.is_preview %}
+                    <span class="badge bg-success">미리보기 가능</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 챕터의 다른 레슨들 -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list"></i> {{ chapter.title }}의 레슨들
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for other_lesson in chapter.lessons.all %}
+                        <div class="list-group-item {% if other_lesson.id == lesson.id %}active{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if other_lesson.id == lesson.id %}
+                                        <i class="fas fa-play-circle text-white"></i>
+                                        <strong class="text-white">{{ other_lesson.title }}</strong>
+                                    {% else %}
+                                        <a href="{% url 'courses:lesson_detail' other_lesson.id %}" 
+                                           class="text-decoration-none">
+                                            <i class="fas fa-play-circle text-muted"></i>
+                                            {{ other_lesson.title }}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if other_lesson.duration %}
+                                        <small class="{% if other_lesson.id == lesson.id %}text-white-50{% else %}text-muted{% endif %}">
+                                            {{ other_lesson.duration }}
+                                        </small>
+                                    {% endif %}
+                                    {% if other_lesson.is_preview %}
+                                        <span class="badge bg-success ms-1">미리보기</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast 알림 -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-info-circle text-primary me-2"></i>
+            <strong class="me-auto">알림</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+<script>
+let currentEditingNoteId = null;
+
+// DOM 로드 후 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', function() {
+    // 편집 버튼들에 이벤트 리스너 추가
+    document.querySelectorAll('.edit-note-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const noteId = this.getAttribute('data-note-id');
+            const content = this.getAttribute('data-content');
+            const timestamp = this.getAttribute('data-timestamp');
+            editNote(noteId, content, timestamp);
+        });
+    });
+    
+    // 삭제 버튼들에 이벤트 리스너 추가
+    document.querySelectorAll('.delete-note-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const noteId = this.getAttribute('data-note-id');
+            deleteNote(noteId);
+        });
+    });
+});
+
+// 노트 저장
+document.getElementById('note-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const content = document.getElementById('note-content').value.trim();
+    const timestamp = document.getElementById('timestamp').value.trim();
+    const noteId = document.getElementById('note-id').value;
+    
+    if (!content) {
+        showToast('노트 내용을 입력해주세요.', 'warning');
+        return;
+    }
+    
+    const data = {
+        content: content,
+        timestamp: timestamp,
+        note_id: noteId || null
+    };
+    
+    fetch('{% url "courses:save_note" lesson.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            resetForm();
+            location.reload(); // 간단하게 페이지 새로고침
+        } else {
+            showToast(data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('오류가 발생했습니다: ' + error, 'danger');
+    });
+});
+
+// 노트 편집
+function editNote(noteId, content, timestamp) {
+    document.getElementById('note-content').value = content;
+    document.getElementById('timestamp').value = timestamp;
+    document.getElementById('note-id').value = noteId;
+    currentEditingNoteId = noteId;
+    
+    // 저장 버튼 텍스트 변경
+    document.querySelector('#note-form button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> 수정';
+}
+
+// 노트 삭제
+function deleteNote(noteId) {
+    if (!confirm('이 노트를 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    fetch(`/courses/note/${noteId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            location.reload();
+        } else {
+            showToast(data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('오류가 발생했습니다: ' + error, 'danger');
+    });
+}
+
+// 현재 시간 가져오기 (유튜브 플레이어에서)
+function getCurrentTime() {
+    // 간단한 구현 - 사용자가 직접 입력하도록 안내
+    const currentTime = prompt('현재 영상 시간을 입력하세요 (예: 05:30):');
+    if (currentTime) {
+        document.getElementById('timestamp').value = currentTime;
+    }
+}
+
+// 폼 리셋
+function resetForm() {
+    document.getElementById('note-content').value = '';
+    document.getElementById('timestamp').value = '';
+    document.getElementById('note-id').value = '';
+    currentEditingNoteId = null;
+    document.querySelector('#note-form button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> 저장';
+}
+
+// 토스트 메시지 표시
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const toastBody = toast.querySelector('.toast-body');
+    const toastHeader = toast.querySelector('.toast-header i');
+    
+    toastBody.textContent = message;
+    
+    // 아이콘 및 색상 변경
+    toastHeader.className = `fas me-2`;
+    if (type === 'success') {
+        toastHeader.classList.add('fa-check-circle', 'text-success');
+    } else if (type === 'danger') {
+        toastHeader.classList.add('fa-exclamation-circle', 'text-danger');
+    } else if (type === 'warning') {
+        toastHeader.classList.add('fa-exclamation-triangle', 'text-warning');
+    } else {
+        toastHeader.classList.add('fa-info-circle', 'text-primary');
+    }
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+</script>
+
+<style>
+.ratio-16x9 {
+    --bs-aspect-ratio: 56.25%;
+}
+
+.border-start {
+    border-left: 3px solid var(--bs-border-color) !important;
+}
+
+.border-danger {
+    --bs-border-color: #dc3545;
+}
+
+.note-item {
+    transition: background-color 0.2s;
+}
+
+.note-item:hover {
+    background-color: #f8f9fa;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 1rem;
+    z-index: 1020;
+}
+
+@media (max-width: 991.98px) {
+    .sticky-top {
+        position: static;
+    }
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}강의 편집 - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> 강의 편집
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- 메시지 표시 -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- 강의 제목 -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                <i class="fas fa-book"></i> 강의 제목
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ course.title }}" required>
+                        </div>
+                        
+                        <!-- 강의 설명 -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-file-text"></i> 강의 설명
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="5" required>{{ course.description }}</textarea>
+                        </div>
+                        
+                        <!-- 재생시간 -->
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">
+                                <i class="fas fa-clock"></i> 재생시간
+                            </label>
+                            <input type="text" class="form-control" id="duration" name="duration" 
+                                   value="{{ course.duration }}" placeholder="예: 2시간 30분">
+                            <div class="form-text">예: 2시간 30분, 150분, 1.5시간</div>
+                        </div>
+                        
+                        <!-- 유튜브 URL -->
+                        <div class="mb-4">
+                            <label for="youtube_url" class="form-label">
+                                <i class="fab fa-youtube"></i> 유튜브 URL
+                            </label>
+                            <input type="url" class="form-control" id="youtube_url" name="youtube_url" 
+                                   value="{{ course.youtube_url }}" 
+                                   placeholder="https://www.youtube.com/watch?v=VIDEO_ID">
+                            <div class="form-text">
+                                유튜브 영상 URL을 입력하면 강의 페이지에 임베드됩니다.
+                            </div>
+                            
+                            <!-- 현재 비디오 ID 표시 -->
+                            {% if course.youtube_video_id %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        현재 비디오 ID: <code>{{ course.youtube_video_id }}</code>
+                                    </small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 유튜브 미리보기 -->
+                        {% if course.youtube_embed_url %}
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-eye"></i> 현재 유튜브 영상 미리보기
+                            </label>
+                            <div class="ratio ratio-16x9">
+                                <iframe src="{{ course.youtube_embed_url }}" 
+                                        title="{{ course.title }}" 
+                                        allowfullscreen
+                                        class="rounded"></iframe>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 버튼들 -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'courses:course_detail' course.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> 취소
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 추가 정보 -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle text-info"></i> 강의 정보
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>카테고리:</strong> {{ course.category.name }}</p>
+                            <p class="mb-1"><strong>난이도:</strong> {{ course.get_level_display_korean }}</p>
+                            <p class="mb-1"><strong>가격 유형:</strong> {{ course.get_price_display_korean }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>강사:</strong> {{ course.instructor.username }}</p>
+                            <p class="mb-1"><strong>생성일:</strong> {{ course.created_at|date:"Y-m-d" }}</p>
+                            <p class="mb-1"><strong>수정일:</strong> {{ course.updated_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ratio-16x9 {
+    --bs-aspect-ratio: 56.25%;
+}
+</style>
+{% endblock %} 
