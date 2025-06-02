@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}모든 강의 - 노마드 코더스{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-4">모든 강의</h1>
+        <p class="lead mb-4">초급부터 고급까지!<br>니꼬쌤과 함께 풀스택으로 성장하세요!</p>
+        
+        <!-- Search Form -->
+        <form method="GET" class="d-flex justify-content-center mb-4">
+            <div class="input-group" style="max-width: 500px;">
+                <input type="text" class="form-control" name="search" 
+                       placeholder="강의를 검색해보세요..." value="{{ search_query }}">
+                <button class="btn btn-light" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Filter Section -->
+<section class="filter-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h5 class="mb-3">필터</h5>
+                
+                <!-- Level Filter -->
+                <div class="mb-3">
+                    <span class="fw-bold me-2">난이도:</span>
+                    <a href="?" class="btn btn-outline-primary btn-filter btn-sm {% if not current_level %}active{% endif %}">전체</a>
+                    <a href="?level=beginner" class="btn btn-outline-success btn-filter btn-sm {% if current_level == 'beginner' %}active{% endif %}">초급</a>
+                    <a href="?level=intermediate" class="btn btn-outline-warning btn-filter btn-sm {% if current_level == 'intermediate' %}active{% endif %}">중급</a>
+                    <a href="?level=advanced" class="btn btn-outline-danger btn-filter btn-sm {% if current_level == 'advanced' %}active{% endif %}">고급</a>
+                </div>
+                
+                <!-- Price Filter -->
+                <div class="mb-3">
+                    <span class="fw-bold me-2">가격:</span>
+                    <a href="?" class="btn btn-outline-primary btn-filter btn-sm {% if not current_price %}active{% endif %}">전체</a>
+                    <a href="?price=free" class="btn btn-outline-success btn-filter btn-sm {% if current_price == 'free' %}active{% endif %}">무료</a>
+                    <a href="?price=paid" class="btn btn-outline-warning btn-filter btn-sm {% if current_price == 'paid' %}active{% endif %}">유료</a>
+                </div>
+                
+                <!-- Technology Tags -->
+                <div class="mb-3">
+                    <span class="fw-bold me-2">기술:</span>
+                    {% for tech in technologies %}
+                        <span class="tech-tag">{{ tech.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Bestseller Courses -->
+    {% if bestseller_courses %}
+    <section class="mb-5">
+        <h2 class="section-title">
+            <i class="fas fa-fire text-danger"></i> 베스트셀러
+        </h2>
+        <div class="course-grid">
+            {% for course in bestseller_courses %}
+                {% include 'courses/course_card.html' %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Updated Courses -->
+    {% if updated_courses %}
+    <section class="mb-5">
+        <h2 class="section-title">
+            <i class="fas fa-sync text-primary"></i> 최신 업데이트
+        </h2>
+        <div class="course-grid">
+            {% for course in updated_courses %}
+                {% include 'courses/course_card.html' %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Free Courses -->
+    {% if free_courses %}
+    <section class="mb-5">
+        <h2 class="section-title">
+            <i class="fas fa-gift text-success"></i> 무료 강의
+        </h2>
+        <div class="course-grid">
+            {% for course in free_courses %}
+                {% include 'courses/course_card.html' %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- All Courses -->
+    <section class="mb-5">
+        <h2 class="section-title">
+            <i class="fas fa-graduation-cap"></i> 모든 강의
+            <small class="text-muted">({{ courses.count }}개)</small>
+        </h2>
+        
+        {% if courses %}
+            <div class="course-grid">
+                {% for course in courses %}
+                    {% include 'courses/course_card.html' %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">검색 결과가 없습니다</h4>
+                <p class="text-muted">다른 검색어나 필터를 시도해보세요.</p>
+                <a href="{% url 'courses:course_list' %}" class="btn btn-primary">전체 강의 보기</a>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %} 

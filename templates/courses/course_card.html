@@ -1,0 +1,82 @@
+<div class="card course-card">
+    {% if course.thumbnail %}
+        <img src="{{ course.thumbnail.url }}" class="card-img-top course-thumbnail" alt="{{ course.title }}">
+    {% else %}
+        <div class="course-thumbnail bg-gradient d-flex align-items-center justify-content-center" 
+             style="background: linear-gradient(135deg, #6366f1, #f59e0b);">
+            <i class="fas fa-play-circle fa-3x text-white"></i>
+        </div>
+    {% endif %}
+    
+    <div class="card-body d-flex flex-column">
+        <!-- Tags -->
+        <div class="mb-2">
+            <span class="badge badge-level badge-{{ course.level }}">
+                {{ course.get_level_display_korean }}
+            </span>
+            
+            {% if course.is_bestseller %}
+                <span class="badge bg-danger">베스트셀러</span>
+            {% endif %}
+            
+            {% if course.is_updated %}
+                <span class="badge bg-primary">업데이트 🔥</span>
+            {% endif %}
+            
+            {% if course.price_type == 'free' %}
+                <span class="badge bg-success">무료 🔥</span>
+            {% endif %}
+            
+            {% if course.is_discount %}
+                <span class="badge bg-warning">할인 🔥</span>
+            {% endif %}
+        </div>
+        
+        <!-- Title -->
+        <h5 class="card-title">
+            <a href="{% url 'courses:course_detail' course.id %}" 
+               class="text-decoration-none text-dark">
+                {{ course.title }}
+            </a>
+        </h5>
+        
+        <!-- Description -->
+        <p class="card-text text-muted small flex-grow-1">
+            {{ course.description|truncatewords:15 }}
+        </p>
+        
+        <!-- Technologies -->
+        <div class="mb-3">
+            {% for tech in course.technologies.all %}
+                <span class="tech-tag" style="background-color: {{ tech.color }}20; color: {{ tech.color }};">
+                    {{ tech.name }}
+                </span>
+            {% endfor %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="d-flex justify-content-between align-items-center mt-auto">
+            <div>
+                <small class="text-muted">
+                    <i class="fas fa-user"></i> {{ course.instructor.get_full_name|default:course.instructor.username }}
+                </small>
+            </div>
+            <div>
+                {% if course.price_type == 'free' %}
+                    <span class="fw-bold text-success">무료</span>
+                {% else %}
+                    <span class="fw-bold text-primary">₩{{ course.price|floatformat:0 }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Action Button -->
+        <div class="mt-3">
+            <a href="{% url 'courses:course_detail' course.id %}" 
+               class="btn btn-primary w-100">
+                강의 보기
+            </a>
+        </div>
+    </div>
+</div> 
+ 

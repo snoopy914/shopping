@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - 노마드 코더스{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Course Header -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'courses:course_list' %}">강의</a></li>
+                        <li class="breadcrumb-item"><a href="?category={{ course.category.slug }}">{{ course.category.name }}</a></li>
+                        <li class="breadcrumb-item active">{{ course.title }}</li>
+                    </ol>
+                </nav>
+                
+                <div class="mb-3">
+                    <span class="badge badge-level badge-{{ course.level }}">
+                        {{ course.get_level_display_korean }}
+                    </span>
+                    
+                    {% if course.is_bestseller %}
+                        <span class="badge bg-danger">베스트셀러</span>
+                    {% endif %}
+                    
+                    {% if course.is_updated %}
+                        <span class="badge bg-primary">업데이트 🔥</span>
+                    {% endif %}
+                    
+                    {% if course.price_type == 'free' %}
+                        <span class="badge bg-success">무료 🔥</span>
+                    {% endif %}
+                    
+                    {% if course.is_discount %}
+                        <span class="badge bg-warning">할인 🔥</span>
+                    {% endif %}
+                </div>
+                
+                <h1 class="display-5 fw-bold mb-3">{{ course.title }}</h1>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-4">
+                        <i class="fas fa-user text-muted"></i>
+                        <span class="ms-1">{{ course.instructor.get_full_name|default:course.instructor.username }}</span>
+                    </div>
+                    
+                    {% if avg_rating %}
+                    <div class="me-4">
+                        <i class="fas fa-star text-warning"></i>
+                        <span class="ms-1">{{ avg_rating|floatformat:1 }} ({{ reviews.count }}개 리뷰)</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if total_lessons %}
+                    <div class="me-4">
+                        <i class="fas fa-play-circle text-muted"></i>
+                        <span class="ms-1">{{ total_lessons }}개 레슨</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <i class="fas fa-calendar text-muted"></i>
+                        <span class="ms-1">{{ course.created_at|date:"Y년 m월 d일" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Course Image -->
+            {% if course.thumbnail %}
+            <div class="mb-4">
+                <img src="{{ course.thumbnail.url }}" class="img-fluid rounded" alt="{{ course.title }}">
+            </div>
+            {% endif %}
+            
+            <!-- Course Description -->
+            <div class="mb-5">
+                <h3 class="mb-3">강의 소개</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="card-text">{{ course.description|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Course Curriculum -->
+            {% if chapters %}
+            <div class="mb-5">
+                <h3 class="mb-3">강의 커리큘럼</h3>
+                <div class="accordion" id="curriculumAccordion">
+                    {% for chapter in chapters %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ chapter.id }}">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" 
+                                    type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse{{ chapter.id }}" 
+                                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                    aria-controls="collapse{{ chapter.id }}">
+                                <strong>#{{ chapter.order }} {{ chapter.title }}</strong>
+                                <span class="badge bg-secondary ms-2">{{ chapter.lessons.count }}개 레슨</span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ chapter.id }}" 
+                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                             aria-labelledby="heading{{ chapter.id }}" 
+                             data-bs-parent="#curriculumAccordion">
+                            <div class="accordion-body">
+                                {% if chapter.description %}
+                                    <p class="text-muted mb-3">{{ chapter.description }}</p>
+                                {% endif %}
+                                
+                                <div class="list-group list-group-flush">
+                                    {% for lesson in chapter.lessons.all %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            {% if lesson.is_preview %}
+                                                <i class="fas fa-eye text-success me-2"></i>
+                                            {% else %}
+                                                <i class="fas fa-lock text-muted me-2"></i>
+                                            {% endif %}
+                                            <span>#{{ chapter.order }}.{{ lesson.order }} {{ lesson.title }}</span>
+                                            {% if lesson.is_preview %}
+                                                <span class="badge bg-success ms-2">미리 보기</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if lesson.duration %}
+                                            <span class="text-muted">({{ lesson.duration }})</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Technologies -->
+            <div class="mb-5">
+                <h3 class="mb-3">사용 기술</h3>
+                <div>
+                    {% for tech in course.technologies.all %}
+                        <span class="tech-tag me-2 mb-2" style="background-color: {{ tech.color }}20; color: {{ tech.color }};">
+                            {{ tech.name }}
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Reviews -->
+            {% if reviews %}
+            <div class="mb-5">
+                <h3 class="mb-3">리뷰 ({{ reviews.count }}개)</h3>
+                {% for review in reviews %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="card-title mb-1">{{ review.user.get_full_name|default:review.user.username }}</h6>
+                                <div class="text-warning">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ review.created_at|date:"Y.m.d" }}</small>
+                        </div>
+                        <p class="card-text">{{ review.comment|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 2rem;">
+                <!-- Purchase Card -->
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            {% if course.price_type == 'free' %}
+                                <h2 class="text-success fw-bold">무료</h2>
+                            {% else %}
+                                <h2 class="text-primary fw-bold">₩{{ course.price|floatformat:0 }}</h2>
+                            {% endif %}
+                        </div>
+                        
+                        {% if course.price_type == 'free' %}
+                            <button class="btn btn-success btn-lg w-100 mb-3">
+                                <i class="fas fa-play"></i> 무료로 시작하기
+                            </button>
+                        {% else %}
+                            <button class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="fas fa-shopping-cart"></i> 구매하기
+                            </button>
+                        {% endif %}
+                        
+                        <div class="text-muted small">
+                            <i class="fas fa-shield-alt"></i> 30일 환불 보장
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Course Info -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">강의 정보</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>난이도:</strong></div>
+                            <div class="col-6">{{ course.get_level_display_korean }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>카테고리:</strong></div>
+                            <div class="col-6">{{ course.category.name }}</div>
+                        </div>
+                        {% if total_lessons %}
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>총 레슨:</strong></div>
+                            <div class="col-6">{{ total_lessons }}개</div>
+                        </div>
+                        {% endif %}
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>강사:</strong></div>
+                            <div class="col-6">{{ course.instructor.get_full_name|default:course.instructor.username }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>업데이트:</strong></div>
+                            <div class="col-6">{{ course.updated_at|date:"Y.m.d" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Preview Lessons -->
+                {% if preview_lessons %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-eye text-success"></i> 미리보기
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for lesson in preview_lessons %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="fw-bold">{{ lesson.title }}</small>
+                                {% if lesson.duration %}
+                                    <br><small class="text-muted">({{ lesson.duration }})</small>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                        {% if not forloop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Related Courses -->
+                {% if related_courses %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">관련 강의</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for related_course in related_courses %}
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                {% if related_course.thumbnail %}
+                                    <img src="{{ related_course.thumbnail.url }}" 
+                                         class="rounded" width="60" height="40" 
+                                         style="object-fit: cover;" alt="{{ related_course.title }}">
+                                {% else %}
+                                    <div class="bg-primary rounded d-flex align-items-center justify-content-center" 
+                                         style="width: 60px; height: 40px;">
+                                        <i class="fas fa-play text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">
+                                    <a href="{% url 'courses:course_detail' related_course.id %}" 
+                                       class="text-decoration-none">
+                                        {{ related_course.title|truncatechars:40 }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">
+                                    {% if related_course.price_type == 'free' %}
+                                        무료
+                                    {% else %}
+                                        ₩{{ related_course.price|floatformat:0 }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
